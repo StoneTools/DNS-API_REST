@@ -19,23 +19,14 @@ $cfg->read('config.cfg') or die $cfg->error();
 
 #dump config variables into hash for later use
 my %configopt = $cfg->vars();
-my $apicn = $configopt{'cn'} or do {
-	print "Customer Name required in config.cfg for API login\n";
-	exit;
-};
-
-my $apiun = $configopt{'un'} or do {
-	print "User Name required in config.cfg for API login\n";
-	exit;
-};
-
-my $apipw = $configopt{'pw'} or do {
-	print "User password required in config.cfg for API login\n";
-	exit;
-};
+my $apicn = $configopt{'cn'}; 
+my $apiun = $configopt{'un'};
+my $apipw = $configopt{'pw'};
 
 
+#create a DynECT API object
 my $dynect = DynECTDNS->new();
+#login
 $dynect->login( $apicn, $apiun, $apipw);
 
 my $opt_zone = 'stonedynamic.com';
