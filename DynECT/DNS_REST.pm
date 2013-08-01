@@ -1,6 +1,6 @@
 #!/usr/bin/env perl
 
-package DynECTDNS;
+package DynECT::DNS_REST;
 
 use strict;
 use warnings;
@@ -53,7 +53,7 @@ sub login {
 	if ( $res ) {
 		#Grab API key
 		$classid->{'apikey'} = $classid->{'resultref'}->{'data'}->{'token'};
-		$classid->{'message'} = "Login successful\n";
+		$classid->{'message'} = "Login successful";
 		return 1;
 	}
 	else {
@@ -73,7 +73,8 @@ sub logout {
 		my $api_result = $classid->{'lwp'}->request( $api_request );
 		my $res =  $classid->check_res( $api_result );
 		if ( $res ) {
-			$classid->{'message'} = "Logout successful\n";
+			undef $classid->{'apikey'};
+			$classid->{'message'} = "Logout successful";
 			return $res;
 		}
 		else {
@@ -89,19 +90,19 @@ sub request {
 		$paramref = $_[3]; 
 		#weak check for correct paramater type
 		unless ( ref($paramref) eq 'HASH' ) {
-			$classid->{'message'} = "Invalid paramater type.  Please utilize a hash reference\n";
+			$classid->{'message'} = "Invalid paramater type.  Please utilize a hash reference";
 			return 0;
 		}
 	}
 #TODO: Set this to detect start of string
 	if ( $uri =~ /\/REST\/Session/ ) {
-		$classid->{'message'} = "Please use the ->login or ->logout for managing sessions\n";
+		$classid->{'message'} = "Please use the ->login or ->logout for managing sessions";
 		return 0;
 		}
 
 	#weak check for valid URI
 	if ( !($uri =~ /\/REST\//) || ( uc($uri) =~ /HTTPS/ )  ) {
-		$classid->{'message'} = "Invalid REST URI.  Correctly formatter URIs start with '/REST/\n";
+		$classid->{'message'} = "Invalid REST URI.  Correctly formatter URIs start with '/REST/";
 		return 0;
 
 	}
@@ -119,7 +120,7 @@ sub request {
 	#check if call succeeded
 	my $res =  $classid->check_res( $api_result );
 	if ( $res ) {
-		$classid->{'message'} = "Request ( $uri, $method) successful\n";
+		$classid->{'message'} = "Request ( $uri, $method) successful";
 		return $res;
 	}
 	else {
@@ -150,7 +151,6 @@ sub check_res {
 				$classid->{'message'} .= "\tLevel: $msgref->{'LVL'}\n" if $msgref->{'LVL'};
 				$classid->{'message'} .= "\tError Code: $msgref->{'ERR_CD'}\n" if $msgref->{'ERR_CD'};
 				$classid->{'message'} .= "\tSource: $msgref->{'SOURCE'}\n" if $msgref->{'SOURCE'};
-				$classid->{'message'} .= "\n";
 			};
 			return 0;
 		}
@@ -187,16 +187,8 @@ sub result {
 sub DESTROY {
 	#get self id
 	my $classid = shift;
-#TODO: Set this to call the logout method rather than duplicating code
-	#existance of the API key means we are logged in
-	if ( $classid->{'apikey'} ) {
-		#Logout of the API, to be nice
-		my $api_request = HTTP::Request->new('DELETE','https://api2.dynect.net/REST/Session');
-		$api_request->header ( 'Content-Type' => 'application/json', 'Auth-Token' => $classid->{'apikey'} );
-		my $api_result = $classid->{'lwp'}->request( $api_request );
-		my $api_decode = decode_json ( $api_result->content);
-	}
-
+	#call logout on destroy
+	$classid->logout();
 }
 
 

@@ -8,8 +8,8 @@ use Data::Dumper;
 
 #Import DynECT handler
 use FindBin;
-use lib "$FindBin::Bin/DynectDNS";  # use the parent directory
-use DynECTDNS;
+use lib "$FindBin::Bin/DynECT";  # use the parent directory
+require DynECT::DNS_REST;
 
 #Create config reader
 my $cfg = new Config::Simple();
@@ -25,7 +25,7 @@ my $apipw = $configopt{'pw'};
 
 
 #create a DynECT API object
-my $dynect = DynECTDNS->new();
+my $dynect = DynECT::DNS_REST->new();
 #login
 $dynect->login( $apicn, $apiun, $apipw);
 
