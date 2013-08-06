@@ -46,6 +46,9 @@ sub login {
 	$api_request->content( to_json( \%api_param ) );
 
 	$classid->{'lwp'} = LWP::UserAgent->new;
+	#diable redirect following as that is a special case with DynECT
+	$classid->{'lwp'}->max_redirect( '0' );
+
 	my $api_result = $classid->{'lwp'}->request( $api_request );
 
 	#check if call succeeded
@@ -100,7 +103,7 @@ sub request {
 
 	#weak check for valid URI
 	if ( !($uri =~ /\/REST\//) || ( uc($uri) =~ /HTTPS/ )  ) {
-		$classid->{'message'} = "Invalid REST URI.  Correctly formatter URIs start with '/REST/";
+		$classid->{'message'} = "Invalid REST URI.  Correctly formatted URIs start with '/REST/";
 		return 0;
 
 	}
@@ -134,6 +137,19 @@ sub check_res {
 		return 0;
 	}
 
+	#on initial redirect the result->code is the URI to the Job ID
+	#Calling the /REST/Job will return JSON in the content of status 
+	if ($api_result->code == 307) {
+		my $api_request = HTTP::Request->new('GET', "https://api2.dynect.net" . $api_result->content);
+		$api_request->header ( 'Content-Type' => 'application/json', 'Auth-Token' => $classid->{'apikey'} );
+		$api_result = $classid->{'lwp'}->request( $api_request );
+		unless ( $api_result->content ) { 
+			$classid->{'message'} = "Unable to connect to API.\n Status message -\n\t" . $api_result->status_line;
+			return 0;
+		}
+	}
+
+	#now safe to decode JSON
 	$classid->{'resultref'} = decode_json ( $api_result->content );
 
 	#loop until the job id comes back as success or program dies
@@ -151,14 +167,12 @@ sub check_res {
 		}
 		else {
 			#status incomplete, wait 5 seconds and check again
-			sleep(5);
+			sleep(2);
 			my $job_uri = "https://api.dynect.net/REST/Job/$classid->{'resultref'}->{'job_id'}/";
 			my $api_request = HTTP::Request->new('GET',$job_uri);
 			$api_request->header ( 'Content-Type' => 'application/json', 'Auth-Token' => $classid->{'apikey'} );
 			my $api_result = $classid->{'lwp'}->request( $api_request );
-			my $res = $classid->check_http( $api_result );
-			#TODO: Change this check content rather than is_success
-			unless ( $api_result->is_success ) { 
+			unless ( $api_result->content ) { 
 				$classid->{'message'} = "Unable to connect to API.\n Status message -\n\t" . $api_result->status_line;
 				return 0;
 			}
