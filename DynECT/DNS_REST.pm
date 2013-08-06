@@ -31,17 +31,17 @@ sub new {
 sub login {
 	#get reference to self
 	#get params from call
-	my ( $classid, $custn, $usern, $pass) = @_;
+	my ($classid, $custn, $usern, $pass) = @_;
 
 	#API login
-	my $session_uri = 'https://api2.dynect.net/REST/Session';
+	my $session_uri = 'https://api.dynect.net/REST/Session';
 	my %api_param = (
 		'customer_name' => $custn,
 		'user_name' => $usern,
 		'password' => $pass,
 	);
 
-	my $api_request = HTTP::Request->new('POST','https://api2.dynect.net/REST/Session');
+	my $api_request = HTTP::Request->new('POST','https://api.dynect.net/REST/Session');
 	$api_request->header ( 'Content-Type' => 'application/json' );
 	$api_request->content( to_json( \%api_param ) );
 
@@ -56,9 +56,9 @@ sub login {
 		$classid->{'message'} = "Login successful";
 		return 1;
 	}
-	else {
-		return $res;
-	}
+
+	return $res;
+
 }
 
 sub logout {
@@ -68,18 +68,16 @@ sub logout {
 	#existance of the API key means we are logged in
 	if ( $classid->{'apikey'} ) {
 		#Logout of the API, to be nice
-		my $api_request = HTTP::Request->new('DELETE','https://api2.dynect.net/REST/Session');
+		my $api_request = HTTP::Request->new('DELETE','https://api.dynect.net/REST/Session');
 		$api_request->header ( 'Content-Type' => 'application/json', 'Auth-Token' => $classid->{'apikey'} );
 		my $api_result = $classid->{'lwp'}->request( $api_request );
 		my $res =  $classid->check_res( $api_result );
 		if ( $res ) {
 			undef $classid->{'apikey'};
 			$classid->{'message'} = "Logout successful";
-			return $res;
 		}
-		else {
-			return $res;
-		}
+		
+		return $res;
 	}
 }
 
@@ -94,7 +92,7 @@ sub request {
 			return 0;
 		}
 	}
-#TODO: Set this to detect start of string
+	#TODO: Set this to detect start of string
 	if ( $uri =~ /\/REST\/Session/ ) {
 		$classid->{'message'} = "Please use the ->login or ->logout for managing sessions";
 		return 0;
@@ -107,25 +105,22 @@ sub request {
 
 	}
 
-	my $api_request = HTTP::Request->new(uc($method), "https://api2.dynect.net$uri");
+	my $api_request = HTTP::Request->new(uc($method), "https://api.dynect.net$uri");
 	$api_request->header ( 'Content-Type' => 'application/json', 'Auth-Token' => $classid->{'apikey'} );
 	if ($paramref) {
 		$api_request->content( to_json( $paramref ) );
-	}
-	else {
+	} else {
 		$api_request->content();
 	}
 
 	my $api_result = $classid->{'lwp'}->request( $api_request );
 	#check if call succeeded
 	my $res =  $classid->check_res( $api_result );
-	if ( $res ) {
-		$classid->{'message'} = "Request ( $uri, $method) successful";
-		return $res;
-	}
-	else {
-		return $res;
-	}
+
+	# If $res, pass back the message
+	$classid->{'message'} = "Request ( $uri, $method) successful" if $res;
+	
+	return $res;
 }
 
 
@@ -157,7 +152,7 @@ sub check_res {
 		else {
 			#status incomplete, wait 5 seconds and check again
 			sleep(5);
-			my $job_uri = "https://api2.dynect.net/REST/Job/$classid->{'resultref'}->{'job_id'}/";
+			my $job_uri = "https://api.dynect.net/REST/Job/$classid->{'resultref'}->{'job_id'}/";
 			my $api_request = HTTP::Request->new('GET',$job_uri);
 			$api_request->header ( 'Content-Type' => 'application/json', 'Auth-Token' => $classid->{'apikey'} );
 			my $api_result = $classid->{'lwp'}->request( $api_request );
@@ -170,6 +165,7 @@ sub check_res {
 			$classid->{'resultref'} = decode_json( $api_result->content );
 		}
 	}
+	
 	return 1;
 }
 
