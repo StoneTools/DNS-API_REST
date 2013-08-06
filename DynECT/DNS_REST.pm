@@ -31,17 +31,17 @@ sub new {
 sub login {
 	#get reference to self
 	#get params from call
-	my ( $classid, $custn, $usern, $pass) = @_;
+	my ($classid, $custn, $usern, $pass) = @_;
 
 	#API login
-	my $session_uri = 'https://api2.dynect.net/REST/Session';
+	my $session_uri = 'https://api.dynect.net/REST/Session';
 	my %api_param = (
 		'customer_name' => $custn,
 		'user_name' => $usern,
 		'password' => $pass,
 	);
 
-	my $api_request = HTTP::Request->new('POST','https://api2.dynect.net/REST/Session');
+	my $api_request = HTTP::Request->new('POST','https://api.dynect.net/REST/Session');
 	$api_request->header ( 'Content-Type' => 'application/json' );
 	$api_request->content( to_json( \%api_param ) );
 
@@ -75,11 +75,9 @@ sub logout {
 		if ( $res ) {
 			undef $classid->{'apikey'};
 			$classid->{'message'} = "Logout successful";
-			return $res;
 		}
-		else {
-			return $res;
-		}
+		
+		return $res;
 	}
 }
 
@@ -111,21 +109,15 @@ sub request {
 	$api_request->header ( 'Content-Type' => 'application/json', 'Auth-Token' => $classid->{'apikey'} );
 	if ($paramref) {
 		$api_request->content( to_json( $paramref ) );
-	}
-	else {
+	} else {
 		$api_request->content();
 	}
 
 	my $api_result = $classid->{'lwp'}->request( $api_request );
 	#check if call succeeded
 	my $res =  $classid->check_res( $api_result );
-	if ( $res ) {
-		$classid->{'message'} = "Request ( $uri, $method) successful";
-		return $res;
-	}
-	else {
-		return $res;
-	}
+	$classid->{'message'} = "Request ( $uri, $method) successful" if $res;
+	return $res;
 }
 
 
