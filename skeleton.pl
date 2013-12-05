@@ -8,8 +8,8 @@ use Data::Dumper;
 
 #Import DynECT handler
 use FindBin;
-use lib "$FindBin::Bin/DynECT";  # use the parent directory
-require DynECT::DNS_REST;
+use lib $FindBin::Bin;  # use the parent directory
+use DynECT::DNS_REST;
 
 #Create config reader
 my $cfg = new Config::Simple();
@@ -25,13 +25,24 @@ my $apipw = $configopt{'pw'};
 
 
 #create a DynECT API object
-my $dynect = DynECT::DNS_REST->new();
+my $dynect = DynECT::DNS_REST->new( version => 3.9.9 );
+
 #login
-$dynect->login( $apicn, $apiun, $apipw);
+$dynect->login( $apicn, $apiun, $apipw) or die $dynect->message;
+#	or die $dynect->message;
 
 my $opt_zone = 'stonedynamic.com';
+
 #Call REST/AllRecord on the zone
 my $res = $dynect->request( "/REST/AllRecord/$opt_zone/", 'GET') or die $dynect->message;
+
+
 print Dumper $dynect->result;
-print $dynect->message;
+
+$dynect->keepalive;
+
+
+
+$dynect->logout;
+
 
